@@ -32,6 +32,12 @@
 
         <dependency>
             <groupId>com.fizzed</groupId>
+            <artifactId>crux-util</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fizzed</groupId>
             <artifactId>jne</artifactId>
             <scope>test</scope>
         </dependency>

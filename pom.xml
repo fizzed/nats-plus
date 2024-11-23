@@ -116,6 +116,12 @@
 
             <dependency>
                 <groupId>com.fizzed</groupId>
+                <artifactId>crux-util</artifactId>
+                <version>1.0.48</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fizzed</groupId>
                 <artifactId>jne</artifactId>
                 <version>4.1.1</version>
             </dependency>
