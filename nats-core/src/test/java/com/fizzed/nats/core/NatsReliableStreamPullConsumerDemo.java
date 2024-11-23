@@ -22,7 +22,7 @@ public class NatsReliableStreamPullConsumerDemo {
         try (Connection nc = Nats.connect(o)) {
             log.info("Connected to nats server!");
 
-            final NatsReliableStreamPullConsumer consumer = new NatsReliableStreamPullConsumer(nc)
+            final NatsReliableStreamPullSubscriber consumer = new NatsReliableStreamPullSubscriber(nc)
                 .setSubject("REQUESTS.priority")
                 .setDurable("REQUESTS-priority-processor")
                 .start();
