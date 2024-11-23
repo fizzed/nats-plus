@@ -1,16 +1,12 @@
 import com.fizzed.blaze.Config;
 import com.fizzed.blaze.Contexts;
-import com.fizzed.jne.HardwareArchitecture;
 import com.fizzed.jne.NativeTarget;
-import com.fizzed.jne.OperatingSystem;
-import com.fizzed.jne.PlatformInfo;
 import org.slf4j.Logger;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -18,39 +14,23 @@ import org.apache.hc.client5.http.fluent.Request;
 
 import static com.fizzed.blaze.Systems.exec;
 import static com.fizzed.blaze.Systems.rm;
-import static java.util.Arrays.asList;
 
 public class blaze {
     private final Logger log = Contexts.logger();
     private final Config config = Contexts.config();
-
+    private final Path projectDir = Contexts.withBaseDir("..").toAbsolutePath().normalize();
+    private final Path resourcesDir = projectDir.resolve(".resources");
     private final String natsVersion = config.value("nats.version").orElse("2.10.22");
 
-    static public class NatsServerPlatform {
-        final String os;
-        final String arch;
-        final String jneOs;
-        final String jneArch;
-
-        public NatsServerPlatform(String os, String arch, String jneOs, String jneArch) {
-            this.os = os;
-            this.arch = arch;
-            this.jneOs = jneOs;
-            this.jneArch = jneArch;
-        }
+    public void setup() throws Exception {
+        this.downloadNatsServer();
     }
 
-    private final List<NatsServerPlatform> natsServerPlatforms = asList(
-//        new NatsServerPlatform("linux", "amd64", "linux", "x64"),
-//        new NatsServerPlatform("darwin", "amd64", "macos", "x64"),
-        new NatsServerPlatform("windows", "amd64", "windows", "x64")
-    );
+    public void nuke() {
+        rm(resourcesDir).recursive().force().verbose().run();
+    }
 
-
-
-    public void downloadNatsServers() throws Exception {
-        final Path projectDir = Contexts.withBaseDir("..").toAbsolutePath().normalize();
-
+    public void downloadNatsServer() throws Exception {
         // detect current os & arch, then translate to values that nats-server project uses
         final NativeTarget nativeTarget = NativeTarget.detect();
         final String natsOs;
@@ -78,31 +58,30 @@ public class blaze {
 
 
         // make a scratch directory
-        final Path scratchDir = projectDir.resolve("temp-download-dir");
-        rm(scratchDir).recursive().force().run();
-        Files.createDirectories(scratchDir);
-        log.info("Created scratch directory: " + scratchDir);
+        final Path tempDownloadDir = projectDir.resolve("temp-download-dir");
+        rm(tempDownloadDir).recursive().force().run();
+        Files.createDirectories(tempDownloadDir);
+        log.info("Created temp download directory: " + tempDownloadDir);
         try {
             // download the nat-server release we will be testing with
             final String url = "https://github.com/nats-io/nats-server/releases/download/v"
                 + this.natsVersion + "/nats-server-v" + this.natsVersion + "-" + natsOs + "-" + natsArch + ".zip";
 
-            final Path downloadFile = scratchDir.resolve("nats-server.zip");
+            final Path downloadFile = tempDownloadDir.resolve("nats-server.zip");
             this.downloadFile(url, downloadFile);
 
-            this.unzip(downloadFile, scratchDir, true);
+            this.unzip(downloadFile, tempDownloadDir, true);
 
-            Path natsExe = scratchDir.resolve("nats-server");
+            Path natsExe = tempDownloadDir.resolve("nats-server");
             if (!Files.exists(natsExe)) {
-                natsExe = scratchDir.resolve("nats-server.exe");
+                natsExe = tempDownloadDir.resolve("nats-server.exe");
             }
 
             // target directory is as a resource
-            final Path resourceDir = projectDir.resolve(".resources");
-            Files.createDirectories(resourceDir);
-            log.info("Created resource directory: " + resourceDir);
+            Files.createDirectories(resourcesDir);
+            log.info("Created resource directory: " + resourcesDir);
 
-            final Path resourceExe = resourceDir.resolve(natsExe.getFileName());
+            final Path resourceExe = resourcesDir.resolve(natsExe.getFileName());
 
             log.info("Copying {} -> {}", natsExe, resourceExe);
             natsExe.toFile().setExecutable(true);
@@ -116,14 +95,10 @@ public class blaze {
             log.info("");
             log.info("Success, all done.");
         } finally {
-            // always cleanup the scratch directory
-            rm(scratchDir).recursive().force().run();
-            log.info("Deleted scratch directory: " + scratchDir);
+            // always cleanup
+            rm(tempDownloadDir).recursive().force().run();
+            log.info("Deleted temp download directory: " + tempDownloadDir);
         }
-    }
-
-    public void nuke() {
-
     }
 
     // helpers
