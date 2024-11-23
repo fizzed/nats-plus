@@ -61,9 +61,15 @@
       <version>1.12</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5-fluent</artifactId>
+      <version>5.4.1</version>
+    </dependency>
+    <dependency>
       <groupId>com.fizzed</groupId>
       <artifactId>jne</artifactId>
       <version>LATEST</version>
     </dependency>
+
   </dependencies>
 </project>
