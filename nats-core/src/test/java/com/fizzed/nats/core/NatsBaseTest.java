@@ -32,6 +32,7 @@ class NatsBaseTest {
     public Connection connectNats(NatsServerRunner nats, boolean clean) throws IOException, InterruptedException, JetStreamApiException {
         final Options options = new Options.Builder()
             .server(nats.getURI())
+            .connectionName("unit-test")
             .build();
 
         final Connection connection = Nats.connect(options);
