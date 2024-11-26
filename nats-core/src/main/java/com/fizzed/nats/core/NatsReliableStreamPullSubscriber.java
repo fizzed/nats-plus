@@ -8,6 +8,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.fizzed.nats.core.NatsHelper.toReliableMessageList;
+
 public class NatsReliableStreamPullSubscriber {
     static private final Logger log = LoggerFactory.getLogger(NatsReliableStreamPullSubscriber.class);
 
@@ -128,13 +130,13 @@ public class NatsReliableStreamPullSubscriber {
         }
     }
 
-    public Message nextMessage(Duration pollTime) throws NatsRecoverableException, NatsUnrecoverableException, InterruptedException {
-        final List<Message> messages = this.nextMessages(1, pollTime);
+    public NatsReliableMessage nextMessage(Duration pollTime) throws NatsRecoverableException, NatsUnrecoverableException, InterruptedException {
+        final List<NatsReliableMessage> messages = this.nextMessages(1, pollTime);
 
         return messages != null && !messages.isEmpty() ? messages.get(0) : null;
     }
 
-    public List<Message> nextMessages(int batchSize, Duration pollTime) throws NatsRecoverableException, NatsUnrecoverableException, InterruptedException {
+    public List<NatsReliableMessage> nextMessages(int batchSize, Duration pollTime) throws NatsRecoverableException, NatsUnrecoverableException, InterruptedException {
         // in nats.java < v2.20.0, they used synchronized() blocks which are not interruptible, so we will do that
         // check here before we try to do a fetch()
         if (Thread.interrupted()) {
@@ -187,7 +189,7 @@ public class NatsReliableStreamPullSubscriber {
             return null;
         }
 
-        return messages;
+        return toReliableMessageList(messages);
     }
 
 }

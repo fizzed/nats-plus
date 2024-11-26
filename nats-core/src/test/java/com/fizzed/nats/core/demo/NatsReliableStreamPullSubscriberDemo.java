@@ -38,7 +38,7 @@ public class NatsReliableStreamPullSubscriberDemo {
                         try {
                             log.debug("Waiting for next message...");
 
-                            final Message message = subscriber.nextMessage(Duration.ofSeconds(120));
+                            final NatsReliableMessage message = subscriber.nextMessage(Duration.ofSeconds(120));
 
                             if (message == null) {
                                 log.warn("No message received");
@@ -47,7 +47,7 @@ public class NatsReliableStreamPullSubscriberDemo {
 
                             log.debug("Received message:\n{}", dumpMessage(message));
 
-                            NatsReliableMessage.ack(message);
+                            message.ack();
                         } catch (NatsRecoverableException e) {
                             log.error("Recoverable exception (will backoff for 5 seconds)", e);
                             Thread.sleep(5000L);

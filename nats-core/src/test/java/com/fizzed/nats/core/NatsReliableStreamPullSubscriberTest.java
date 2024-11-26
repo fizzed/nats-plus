@@ -47,18 +47,18 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                     .start();
 
                 // how we'll wait for replies
-                final BlockingDeque<Message> receivedMessages = new LinkedBlockingDeque<>();
+                final BlockingDeque<NatsReliableMessage> receivedMessages = new LinkedBlockingDeque<>();
                 final CountDownLatch subscriberStoppedLatch = new CountDownLatch(1);
                 final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
                 final Thread subscriberThread = new Thread(() -> {
                     try {
                         while (true) {
-                            final Message message = subscriber.nextMessage(Duration.ofSeconds(30));
+                            final NatsReliableMessage message = subscriber.nextMessage(Duration.ofSeconds(30));
 
                             receivedMessages.push(message);
 
-                            NatsReliableMessage.ack(message);
+                            message.ack();
                         }
                     } catch (InterruptedException | NatsUnrecoverableException e) {
                         // this is okay if we're being flagged to shutdown
@@ -86,10 +86,10 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                 assertThat(ack1.getStream(), is(streamName));
                 assertThat(ack1.getSeqno(), is(1L));    // first message in a stream should be 1
 
-                Message message1 = receivedMessages.poll(5, TimeUnit.SECONDS);
+                NatsReliableMessage message1 = receivedMessages.poll(5, TimeUnit.SECONDS);
 
                 assertThat(message1.getSubject(), is(subjectName));
-                assertThat(new String(message1.getData()), is("Hello 1"));
+                assertThat(message1.getString(), is("Hello 1"));
 
 
                 final PublishAck ack2 = publisher.publish(NatsMessage.builder()
@@ -97,11 +97,11 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                     .data("Hello 2")
                     .build());
 
-                Message message2 = receivedMessages.poll(5, TimeUnit.SECONDS);
+                NatsReliableMessage message2 = receivedMessages.poll(5, TimeUnit.SECONDS);
 
                 assertThat(message2, is(not(nullValue())));
                 assertThat(message2.getSubject(), is(subjectName));
-                assertThat(new String(message2.getData()), is("Hello 2"));
+                assertThat(message2.getString(), is("Hello 2"));
 
                 // interrupt subscriber, wait for it to exit as gracefully as we can (we test for this logic in other
                 // unit tests so we are just trying to avoid weird log messages when server shuts down as part of cleanup
@@ -157,7 +157,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                 }
 
                 // nextMessage() should succeed now
-                Message message = subscriber.nextMessage(Duration.ofMillis(250L));
+                NatsReliableMessage message = subscriber.nextMessage(Duration.ofMillis(250L));
 
                 assertThat(message, is(nullValue()));
 
@@ -250,7 +250,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                     .start();
 
                 // subscribe will wait for no messages and return empty
-                final List<Message> messages1 = subscriber.nextMessages(2, Duration.ofMillis(250L));
+                final List<NatsReliableMessage> messages1 = subscriber.nextMessages(2, Duration.ofMillis(250L));
 
                 assertThat(messages1, is(nullValue()));
 
@@ -262,7 +262,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
 
                 // we'll request a batch of 2 messages even though just 1 was published, does it wait the full amount?
                 final long nowStart1 = System.currentTimeMillis();
-                final List<Message> messages2 = subscriber.nextMessages(20, Duration.ofSeconds(10));
+                final List<NatsReliableMessage> messages2 = subscriber.nextMessages(20, Duration.ofSeconds(10));
                 final long nowStart2 = System.currentTimeMillis();
 
                 assertThat(messages2, hasSize(1));
@@ -295,7 +295,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                     // its underlying fetch(), which then allows us to check and throw an interrupted exception
                     Thread.currentThread().interrupt();
 
-                    Message message = subscriber.nextMessage(Duration.ofSeconds(5));
+                    NatsReliableMessage message = subscriber.nextMessage(Duration.ofSeconds(5));
 
                     fail("We expected an InterruptedException");
                 } catch (InterruptedException e) {
@@ -312,7 +312,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                     .data("Hello 1")
                     .build());
 
-                final Message message = subscriber.nextMessage(Duration.ofSeconds(5));
+                final NatsReliableMessage message = subscriber.nextMessage(Duration.ofSeconds(5));
 
                 assertThat(message.getSubject(), is(subjectName));
                 assertThat(new String(message.getData()), is("Hello 1"));
@@ -348,7 +348,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                         // NOTE: this will help our unit test get as close as possible to waiting for us to enter nextMessage()
                         nextMessageBeforeLatch.countDown();
 
-                        final Message message = subscriber.nextMessage(Duration.ofSeconds(10));
+                        final NatsReliableMessage message = subscriber.nextMessage(Duration.ofSeconds(10));
 
                         log.debug("nextMessage() exited");
 
@@ -408,10 +408,10 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                         // NOTE: this will help our unit test get as close as possible to waiting for us to enter nextMessage()
                         nextMessageBeforeLatch1.countDown();
 
-                        final Message message = subscriber.nextMessage(Duration.ofSeconds(20));
+                        final NatsReliableMessage message = subscriber.nextMessage(Duration.ofSeconds(20));
 
                         if (message != null) {
-                            log.debug("Received message: {}", dumpMessage(message));
+                            log.debug("Received message: {}", dumpMessage(message.unwrap()));
                         }
 
                         fail("nextMessage() expected to throw exception, not exit");
@@ -444,7 +444,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
 
                 // since the connection is still down, we should quickly get a recoverable exception
                 try {
-                    Message message1 = subscriber.nextMessage(Duration.ofSeconds(10));
+                    NatsReliableMessage message1 = subscriber.nextMessage(Duration.ofSeconds(10));
                     fail("nextMessage() should have failed");
                 } catch (NatsRecoverableException e) {
                     // expected
@@ -462,7 +462,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                         .requireMillis(5000L, 100L);
 
                     // this should now work, but return nothing yet
-                    Message message1 = subscriber.nextMessage(Duration.ofSeconds(1));
+                    NatsReliableMessage message1 = subscriber.nextMessage(Duration.ofSeconds(1));
 
                     assertThat(message1, is(nullValue()));
 
@@ -472,7 +472,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                         .data("Hello 1")
                         .build());
 
-                    Message message2 = subscriber.nextMessage(Duration.ofSeconds(5));
+                    NatsReliableMessage message2 = subscriber.nextMessage(Duration.ofSeconds(5));
 
                     assertThat(message2, is(not(nullValue())));
                     assertThat(message2.getSubject(), is(subjectName));
@@ -509,7 +509,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                         // NOTE: this will help our unit test get as close as possible to waiting for us to enter nextMessage()
                         nextMessageBeforeLatch.countDown();
 
-                        final Message message = subscriber.nextMessage(Duration.ofSeconds(20));
+                        final NatsReliableMessage message = subscriber.nextMessage(Duration.ofSeconds(20));
 
                         fail("nextMessage() expected to throw exception, not exit");
                     } catch (NatsUnrecoverableException e) {

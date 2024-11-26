@@ -5,14 +5,43 @@ import io.nats.client.impl.Headers;
 import io.nats.client.impl.NatsJetStreamMetaData;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class NatsHelper {
+
+    static public List<NatsReliableMessage> toReliableMessageList(List<Message> messages) {
+        // if just a single message, we'll optimize for that
+        if (messages == null) {
+            return null;
+        }
+        if (messages.size() == 1) {
+            return Collections.singletonList(new NatsReliableMessage(messages.get(0)));
+        }
+        List<NatsReliableMessage> newMessages = new ArrayList<>(messages.size());
+        for (Message m : messages) {
+            newMessages.add(new NatsReliableMessage(m));
+        }
+        return newMessages;
+    }
 
     static public String dumpMessage(Message message) {
         return dumpMessage(message, 255);
     }
 
+    static public String dumpMessage(NatsReliableMessage message) {
+        if (message == null) {
+            return null;
+        }
+        return dumpMessage(message.unwrap(), 255);
+    }
+
     static public String dumpMessage(Message message, int maxDataLength) {
+        if (message == null) {
+            return null;
+        }
+
         final StringBuilder sb = new StringBuilder();
 
         sb.append("subject: ").append(message.getSubject()).append("\n");
