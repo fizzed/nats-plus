@@ -7,10 +7,7 @@ import java.util.UUID;
 
 import io.nats.NatsServerRunner;
 import io.nats.client.*;
-import io.nats.client.api.DiscardPolicy;
-import io.nats.client.api.RetentionPolicy;
-import io.nats.client.api.StorageType;
-import io.nats.client.api.StreamConfiguration;
+import io.nats.client.api.*;
 
 class NatsBaseTest {
 
@@ -64,9 +61,9 @@ class NatsBaseTest {
         return "durable-" + UUID.randomUUID().toString().replace("-", "");
     }
 
-    public void createWorkQueueStream(Connection connection, String streamName, String subjects) throws IOException, JetStreamApiException {
+    public StreamInfo createWorkQueueStream(Connection connection, String streamName, String subjects) throws IOException, JetStreamApiException {
         JetStreamManagement jsm = connection.jetStreamManagement();
-        jsm.addStream(StreamConfiguration.builder()
+        return jsm.addStream(StreamConfiguration.builder()
             .name(streamName)
             .storageType(StorageType.File)
             .subjects(subjects)

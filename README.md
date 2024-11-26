@@ -1,3 +1,22 @@
+Nats Plus by Fizzed
+===================
+
+Testing this library with other nats.java versions:
+
+    mvn -Dnats.java.version=2.19.1 test
+    mvn -Dnats.java.version=2.20.5-SNAPSHOT test
+
+
+
+
+
+
+
+
+
+
+
+
 RabbitMQ Plus by Fizzed
 ============================================
 

@@ -10,21 +10,25 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.fizzed.nats.core.NatsHelper.dumpMessage;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
     static private final Logger log = LoggerFactory.getLogger(NatsReliableStreamPullSubscriberTest.class);
 
     @Test
-    void publishAndSubscribe() throws Exception {
+    void nextMessagePublishAndSubscribe() throws Exception {
         final String streamName = this.randomStreamName();
         final String subjectName = this.randomSubjectName();
         final String durableName = this.randomDurableName();
@@ -45,6 +49,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
                 // how we'll wait for replies
                 final BlockingDeque<Message> receivedMessages = new LinkedBlockingDeque<>();
                 final CountDownLatch subscriberStoppedLatch = new CountDownLatch(1);
+                final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
                 final Thread subscriberThread = new Thread(() -> {
                     try {
@@ -52,13 +57,20 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
                             final Message message = subscriber.nextMessage(Duration.ofSeconds(30));
 
                             receivedMessages.push(message);
-                            message.ack();
+
+                            NatsReliableMessage.ack(message);
                         }
-                    } catch (InterruptedException e) {
-                        log.debug("Expected interruption");
+                    } catch (InterruptedException | NatsUnrecoverableException e) {
+                        // this is okay if we're being flagged to shutdown
+                        if (shuttingDown.get()) {
+                            log.debug("Expected interruption / unrecoverable exception", e);
+                        } else {
+                            log.error("UNEXPECTED EXCEPTION", e);
+                            fail("Unexpected exception thrown during subscribe!");
+                        }
                     } catch (Exception e) {
-                        log.error(e.getMessage(), e);
-                        fail("Exception thrown during subscribe!");
+                        log.error("UNEXPECTED EXCEPTION", e);
+                        fail("Unexpected exception thrown during subscribe!");
                     }
 
                     subscriberStoppedLatch.countDown();
@@ -93,11 +105,50 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
 
                 // interrupt subscriber, wait for it to exit as gracefully as we can (we test for this logic in other
                 // unit tests so we are just trying to avoid weird log messages when server shuts down as part of cleanup
+                shuttingDown.set(true);
                 subscriberThread.interrupt();
 
                 if (!subscriberStoppedLatch.await(3, TimeUnit.SECONDS)) {
                     fail("Subscriber thread did not successfully stop");
                 }
+            }
+        }
+    }
+
+    @Test
+    void nextMessagesPublishAndSubscribe() throws Exception {
+        try (NatsServerRunner nats = this.buildNatsServerRunner()) {
+            try (Connection connection = this.connectNats(nats, true)) {
+                final String subjectName = this.randomSubjectName();
+
+                this.createWorkQueueStream(connection, this.randomStreamName(), subjectName);
+
+                final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
+                    .start();
+
+                final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
+                    .setSubject(subjectName)
+                    .setDurable(this.randomDurableName())
+                    .start();
+
+                // subscribe will wait for no messages and return empty
+                final List<Message> messages1 = subscriber.nextMessages(2, Duration.ofMillis(250L));
+
+                assertThat(messages1, is(nullValue()));
+
+                // publish 1 message, but we'll ask for 2, see if it waits the full timeout?
+                publisher.publish(NatsMessage.builder()
+                    .subject(subjectName)
+                    .data("Hello 1")
+                    .build());
+
+                // we'll request a batch of 2 messages even though just 1 was published, does it wait the full amount?
+                final long nowStart1 = System.currentTimeMillis();
+                final List<Message> messages2 = subscriber.nextMessages(20, Duration.ofSeconds(10));
+                final long nowStart2 = System.currentTimeMillis();
+
+                assertThat(messages2, hasSize(1));
+                assertThat(nowStart2 - nowStart1, lessThan(3000L));     // nextMessages should have been quick
             }
         }
     }

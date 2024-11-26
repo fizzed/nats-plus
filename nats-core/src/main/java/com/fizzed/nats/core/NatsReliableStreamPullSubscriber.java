@@ -165,6 +165,9 @@ public class NatsReliableStreamPullSubscriber {
                 // otherwise, throw an interrupt exception
                 throw new InterruptedException();
             }
+
+            // we'll normalize an empty list to a null
+            return null;
         }
 
         return messages;
