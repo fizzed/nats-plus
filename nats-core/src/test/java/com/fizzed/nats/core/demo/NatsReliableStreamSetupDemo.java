@@ -31,7 +31,7 @@ public class NatsReliableStreamSetupDemo {
                 log.info("Deleted stream: name={}", streamName);
             }
 
-            /*// create work queue stream
+            // create work queue stream
             final String requestQueueStreamName = "request-queue-stream";
             final String requestQueueStreamConsumer = "request-queue-consumer";
             final String requestQueueSubjects = "request.queue.priority";
@@ -52,7 +52,7 @@ public class NatsReliableStreamSetupDemo {
 
             log.info("Created durable consumer: stream={}, durable={}", requestQueueStreamName, requestQueueStreamConsumer);
 
-            log.info("Consumer: {}", consumerInfo);*/
+            log.info("Consumer: {}", consumerInfo);
         }
     }
 

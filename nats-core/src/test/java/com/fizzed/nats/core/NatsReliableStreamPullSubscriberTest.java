@@ -24,7 +24,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
+class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
     static private final Logger log = LoggerFactory.getLogger(NatsReliableStreamPullSubscriberTest.class);
 
     @Test
@@ -111,6 +111,124 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
                 if (!subscriberStoppedLatch.await(3, TimeUnit.SECONDS)) {
                     fail("Subscriber thread did not successfully stop");
                 }
+            }
+        }
+    }
+
+    @Test
+    void startStop() throws Exception {
+        final String streamName = this.randomStreamName();
+        final String subjectName = this.randomSubjectName();
+        final String durableName = this.randomDurableName();
+
+        try (NatsServerRunner nats = this.buildNatsServerRunner()) {
+            try (Connection connection = this.connectNats(nats, true)) {
+                // create stream for work queue
+                this.createWorkQueueStream(connection, streamName, subjectName);
+
+                final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
+                    .setSubject(subjectName)
+                    .setDurable(durableName)
+                    // do NOT call start yet
+                    ;
+
+                try {
+                    subscriber.nextMessage(Duration.ofSeconds(5));
+                    fail("Expected nextMessage() to have failed");
+                } catch (NatsUnrecoverableException e) {
+                    // expected
+                } catch (Exception e) {
+                    // unexpected
+                    fail("Unexpected exception thrown during subscribe: " + e.getMessage());
+                }
+
+                // what happens if you call stop before start?
+                subscriber.stop();
+
+                // start subscriber, which should allow things to work now
+                subscriber.start();
+
+                // what happens if you call it when already started?
+                try {
+                    subscriber.start();
+                    fail("Expected start() to have failed");
+                } catch (NatsUnrecoverableException e) {
+                    // expected
+                }
+
+                // nextMessage() should succeed now
+                Message message = subscriber.nextMessage(Duration.ofMillis(250L));
+
+                assertThat(message, is(nullValue()));
+
+                // stop should work
+                subscriber.stop();
+
+                // should be able to call it twice
+                subscriber.stop();
+            }
+        }
+    }
+
+    @Test
+    void startAfterConnectionFailed() throws Exception {
+        final String streamName = this.randomStreamName();
+        final String subjectName = this.randomSubjectName();
+        final String durableName = this.randomDurableName();
+
+        try (NatsServerRunner nats = this.buildNatsServerRunner()) {
+            try (Connection connection = this.connectNats(nats, true)) {
+                // create stream for work queue
+                this.createWorkQueueStream(connection, streamName, subjectName);
+
+                final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
+                    .setSubject(subjectName)
+                    .setDurable(durableName)
+                    // do NOT call start yet
+                    ;
+
+                nats.shutdown(true);
+
+                try {
+                    subscriber.start();
+                    fail("Expected start() to have failed");
+                } catch (NatsUnrecoverableException e) {
+                    // expected
+                }
+
+                // start the nats server back up
+                try (NatsServerRunner nats2 = this.buildNatsServerRunner()) {
+                    // the subscriber should start now
+                    subscriber.start();
+                }
+            }
+        }
+    }
+
+    @Test
+    void stopAfterConnectionFailed() throws Exception {
+        final String streamName = this.randomStreamName();
+        final String subjectName = this.randomSubjectName();
+        final String durableName = this.randomDurableName();
+
+        try (NatsServerRunner nats = this.buildNatsServerRunner()) {
+            try (Connection connection = this.connectNats(nats, true)) {
+                // create stream for work queue
+                this.createWorkQueueStream(connection, streamName, subjectName);
+
+                final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
+                    .setSubject(subjectName)
+                    .setDurable(durableName)
+                    .start();
+
+                nats.shutdown(true);
+
+                Thread.sleep(1000L);
+
+                log.debug("Stopping subscriber now...");
+                subscriber.stop();
+                subscriber.stop();
+                log.debug("Stopped subscriber");
             }
         }
     }
@@ -283,7 +401,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
 
                 // start thread to consume
                 final CountDownLatch nextMessageBeforeLatch1 = new CountDownLatch(1);
-                final CountDownLatch nextMessageUnrecoverableLatch1 = new CountDownLatch(1);
+                final CountDownLatch nextMessageRecoverableLatch = new CountDownLatch(1);
 
                 final Thread subscriberThread1 = new Thread(() -> {
                     try {
@@ -297,10 +415,10 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
                         }
 
                         fail("nextMessage() expected to throw exception, not exit");
-                    } catch (NatsUnrecoverableException e) {
+                    } catch (NatsRecoverableException e) {
                         // expected
-                        log.debug("nextMesssage threw an expection exception", e);
-                        nextMessageUnrecoverableLatch1.countDown();
+                        log.debug("nextMesssage threw an expected exception", e);
+                        nextMessageRecoverableLatch.countDown();
                     } catch (Exception e) {
                         log.error("Unexpected exception", e);
                         fail("Unexpected exception " + e.getMessage());
@@ -320,17 +438,21 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
                 nats.shutdown(true);
 
                 // the subscriber should now receive an unrecoverable exception
-                if (!nextMessageUnrecoverableLatch1.await(5, TimeUnit.SECONDS)) {
+                if (!nextMessageRecoverableLatch.await(5, TimeUnit.SECONDS)) {
                     fail("nextMessage() did not throw an unrecoverable exception");
                 }
 
-                // since the connection is still down, we should quickly get an unrecoverable exception
+                // since the connection is still down, we should quickly get a recoverable exception
                 try {
                     Message message1 = subscriber.nextMessage(Duration.ofSeconds(10));
                     fail("nextMessage() should have failed");
-                } catch (NatsUnrecoverableException e) {
+                } catch (NatsRecoverableException e) {
                     // expected
                     log.debug("nextMesssage threw an expection exception", e);
+                } catch (Exception e) {
+                    // anything else would be unexpected
+                    log.error("Unexpected exception", e);
+                    fail("Unexpected exception " + e.getMessage());
                 }
 
                 // now, we'll start the server back up, which should allow the
@@ -358,6 +480,80 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest{
 
                     message2.ackSync(Duration.ofSeconds(5));
                 }
+            }
+        }
+    }
+
+    @Test
+    void nextMessageQueueDeletedDuringFetch() throws Exception {
+        final String streamName = this.randomStreamName();
+        final String subjectName = this.randomSubjectName();
+        final String durableName = this.randomDurableName();
+
+        try (NatsServerRunner nats = this.buildNatsServerRunner()) {
+            try (Connection connection = this.connectNats(nats, true)) {
+                // create stream for work queue
+                this.createWorkQueueStream(connection, streamName, subjectName);
+
+                final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
+                    .setSubject(subjectName)
+                    .setDurable(durableName)
+                    .start();
+
+                // start thread to consume
+                final CountDownLatch nextMessageBeforeLatch = new CountDownLatch(1);
+                final CountDownLatch nextMessageUnrecoverableLatch = new CountDownLatch(1);
+
+                final Thread subscriberThread1 = new Thread(() -> {
+                    try {
+                        // NOTE: this will help our unit test get as close as possible to waiting for us to enter nextMessage()
+                        nextMessageBeforeLatch.countDown();
+
+                        final Message message = subscriber.nextMessage(Duration.ofSeconds(20));
+
+                        fail("nextMessage() expected to throw exception, not exit");
+                    } catch (NatsUnrecoverableException e) {
+                        // expected
+                        log.debug("nextMesssage threw an expected exception", e);
+                        nextMessageUnrecoverableLatch.countDown();
+                    } catch (Exception e) {
+                        log.error("Unexpected exception", e);
+                        fail("Unexpected exception " + e.getMessage());
+                    }
+                });
+                subscriberThread1.start();
+
+                // await for message consuming to be happening
+                nextMessageBeforeLatch.await();
+
+                // to give our subscriberThread as much time to make sure its in the nats.java fetch() we will pause
+                // for a brief period to help guarantee as much as we can that it'll be waiting
+                Thread.sleep(1000L);
+
+                // let's delete the queue now
+                this.cleanNats(connection);
+
+                // the subscriber should now receive an unrecoverable exception
+                if (!nextMessageUnrecoverableLatch.await(5, TimeUnit.SECONDS)) {
+                    fail("nextMessage() did not throw an unrecoverable exception");
+                }
+
+                // subscriber stop should be okay
+                subscriber.stop();
+
+                // start should not succeed if queues are still deleted
+                try {
+                    subscriber.start();
+                    fail("start() should have failed");
+                } catch (NatsUnrecoverableException e) {
+                    // expected
+                }
+
+                // create queues again
+                this.createWorkQueueStream(connection, streamName, subjectName);
+
+                // start should now work
+                subscriber.start();
             }
         }
     }

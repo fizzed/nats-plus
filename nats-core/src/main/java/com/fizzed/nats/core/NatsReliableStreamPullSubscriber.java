@@ -4,7 +4,6 @@ import io.nats.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,51 +72,69 @@ public class NatsReliableStreamPullSubscriber {
         return this;
     }
 
-    public NatsReliableStreamPullSubscriber start() throws IOException, JetStreamApiException {
+    synchronized public NatsReliableStreamPullSubscriber start() throws NatsUnrecoverableException {
         if (this.subscription != null) {
-            throw new IllegalStateException("Already subscribed");
+            throw new NatsUnrecoverableException("Subscription already active", null);
         }
 
-        this.connection.addConnectionListener(this.connectionListener);
+        try {
+            final JetStream js = this.connection.jetStream();
 
-        final JetStream js = this.connection.jetStream();
+            this.subscription = js.subscribe(this.subject, PullSubscribeOptions.builder()
+                .durable(this.durable)
+                .build());
 
-        this.subscription = js.subscribe(this.subject, PullSubscribeOptions.builder()
-            .durable(this.durable)
-            .build());
+            // we do this last so that if the subscription fails, we don't add too many connection listeners
+            this.connection.addConnectionListener(this.connectionListener);
+        } catch (Exception e) {
+            throw new NatsUnrecoverableException(e.getMessage(), e);
+        }
 
         return this;
     }
 
-    public NatsReliableStreamPullSubscriber stop() throws IOException, JetStreamApiException {
-        this.connection.removeConnectionListener(this.connectionListener);
-
-        // try our best to officially unsubscribe
+    synchronized public void stop() {
+        // is the subscription active?
         if (this.subscription != null) {
-            this.subscription.unsubscribe();
-        }
+            // try to officially unsubscribe
+            try {
+                this.subscription.unsubscribe();
+            } catch (Exception e) {
+                // while we'd love to throw an unrecoverable exception, we are trying our best to unsubscribe and
+                // this could happen when the connection is down, etc.
+                log.warn("Nats unsubscribe failed (but we are ignoring it so that we can stop() the pull subscriber)", e);
+            }
 
-        return this;
+            this.connection.removeConnectionListener(this.connectionListener);
+
+            // mark the subscription as finished
+            this.subscription = null;
+        }
     }
 
     public boolean isHealthy() {
         return this.unhealthyRef.get() == null;
     }
 
-    protected void checkHealth() throws NatsUnrecoverableException {
+    protected void checkHealth() throws NatsUnrecoverableException, NatsRecoverableException {
         String unhealthyMessage = this.unhealthyRef.get();
         if (unhealthyMessage != null) {
+            // connection problems are recoverable
+            if (unhealthyMessage.contains("connection problem")) {
+                throw new NatsRecoverableException(unhealthyMessage, null);
+            }
+            // otherwise, we'll assume its something more serious
             throw new NatsUnrecoverableException(unhealthyMessage, null);
         }
     }
 
-    public Message nextMessage(Duration pollTime) throws NatsUnrecoverableException, InterruptedException {
+    public Message nextMessage(Duration pollTime) throws NatsRecoverableException, NatsUnrecoverableException, InterruptedException {
         final List<Message> messages = this.nextMessages(1, pollTime);
 
         return messages != null && !messages.isEmpty() ? messages.get(0) : null;
     }
 
-    public List<Message> nextMessages(int batchSize, Duration pollTime) throws NatsUnrecoverableException, InterruptedException {
+    public List<Message> nextMessages(int batchSize, Duration pollTime) throws NatsRecoverableException, NatsUnrecoverableException, InterruptedException {
         // in nats.java < v2.20.0, they used synchronized() blocks which are not interruptible, so we will do that
         // check here before we try to do a fetch()
         if (Thread.interrupted()) {
@@ -125,7 +142,7 @@ public class NatsReliableStreamPullSubscriber {
         }
 
         if (this.subscription == null) {
-            throw new NatsUnrecoverableException("Not yet subscribed", null);
+            throw new NatsUnrecoverableException("Subscription is not active (did you forget to call .start() ?)", null);
         }
 
         // verify we are healthy
