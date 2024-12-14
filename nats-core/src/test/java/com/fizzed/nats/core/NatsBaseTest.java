@@ -42,11 +42,7 @@ class NatsBaseTest {
     }
 
     public void cleanNats(Connection connection) throws IOException, JetStreamApiException {
-        JetStreamManagement jsm = connection.jetStreamManagement();
-        final List<String> streamNames = jsm.getStreamNames();
-        for (String streamName : streamNames) {
-            jsm.deleteStream(streamName);
-        }
+        NatsHelper.deleteAllStreams(connection);
     }
 
     public String randomStreamName() {
@@ -59,17 +55,6 @@ class NatsBaseTest {
 
     public String randomDurableName() {
         return "durable-" + UUID.randomUUID().toString().replace("-", "");
-    }
-
-    public StreamInfo createWorkQueueStream(Connection connection, String streamName, String subjects) throws IOException, JetStreamApiException {
-        JetStreamManagement jsm = connection.jetStreamManagement();
-        return jsm.addStream(StreamConfiguration.builder()
-            .name(streamName)
-            .storageType(StorageType.File)
-            .subjects(subjects)
-            .retentionPolicy(RetentionPolicy.WorkQueue)
-            .discardPolicy(DiscardPolicy.Old)
-            .build());
     }
 
 }

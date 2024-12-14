@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static com.fizzed.nats.core.NatsHelper.toReliableMessageList;
 
@@ -43,7 +44,8 @@ public class NatsReliableStreamPullSubscriber {
         }
     }
 
-    private final Connection connection;
+    private final Supplier<Connection> connectionSupplier;
+    private Connection connection;
     private final InternalConnectionListener connectionListener;
     private final AtomicReference<Thread> threadRef = new AtomicReference<>();
     private final AtomicReference<String> unhealthyRef = new AtomicReference<>();
@@ -52,7 +54,11 @@ public class NatsReliableStreamPullSubscriber {
     private JetStreamSubscription subscription;
 
     public NatsReliableStreamPullSubscriber(Connection connection) {
-        this.connection = connection;
+        this(() -> connection);
+    }
+
+    public NatsReliableStreamPullSubscriber(Supplier<Connection> connectionSupplier) {
+        this.connectionSupplier = connectionSupplier;
         this.connectionListener = new InternalConnectionListener();
     }
 
@@ -80,6 +86,8 @@ public class NatsReliableStreamPullSubscriber {
         }
 
         try {
+            this.connection = this.connectionSupplier.get();
+
             final JetStream js = this.connection.jetStream();
 
             this.subscription = js.subscribe(this.subject, PullSubscribeOptions.builder()
@@ -111,6 +119,7 @@ public class NatsReliableStreamPullSubscriber {
 
             // mark the subscription as finished
             this.subscription = null;
+            this.connection = null;
         }
     }
 

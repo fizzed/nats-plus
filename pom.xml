@@ -32,8 +32,8 @@
 
     <modules>
         <module>nats-core</module>
-<!--        <module>rabbitmq-ninja-demo</module>
-        <module>rabbitmq-ninja-module</module>-->
+        <module>nats-ninja-module</module>
+        <module>nats-ninja-demo</module>
     </modules>
 
     <dependencyManagement>
@@ -45,18 +45,17 @@
                 <artifactId>nats-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
-            <!--<dependency>
+
+            <dependency>
                 <groupId>com.fizzed</groupId>
-                <artifactId>rabbitmq-ninja-module</artifactId>
+                <artifactId>nats-ninja-module</artifactId>
                 <version>${project.version}</version>
-            </dependency>-->
+            </dependency>
 
             <dependency>
                 <groupId>io.nats</groupId>
                 <artifactId>jnats</artifactId>
                 <version>${nats.java.version}</version>
-<!--                <version>2.19.1</version>-->
             </dependency>
             
             <dependency>

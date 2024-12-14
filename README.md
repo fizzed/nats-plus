@@ -66,7 +66,7 @@ In your `conf/Module.java` file:
 ```java
 package conf;
 
-import com.fizzed.rabbitmq.ninja.NinjaRabbitModule;
+import com.fizzed.nats.ninja.NinjaNatsModule;
 import com.google.inject.AbstractModule;
 
 public class Module extends AbstractModule {

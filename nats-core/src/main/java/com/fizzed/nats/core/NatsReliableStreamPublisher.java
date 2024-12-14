@@ -4,14 +4,19 @@ import io.nats.client.*;
 import io.nats.client.api.PublishAck;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 public class NatsReliableStreamPublisher {
 
-    private final Connection connection;
+    private final Supplier<Connection> connectionSupplier;
     private JetStream js;
 
     public NatsReliableStreamPublisher(Connection connection) {
-        this.connection = connection;
+        this(() -> connection);
+    }
+
+    public NatsReliableStreamPublisher(Supplier<Connection> connectionSupplier) {
+        this.connectionSupplier = connectionSupplier;
     }
 
     public NatsReliableStreamPublisher start() throws NatsUnrecoverableException {
@@ -19,8 +24,10 @@ public class NatsReliableStreamPublisher {
             throw new NatsUnrecoverableException("Publisher already active", null);
         }
 
+        final Connection connection = connectionSupplier.get();
+
         try {
-            this.js = this.connection.jetStream();
+            this.js = connection.jetStream();
         } catch (IOException e) {
             throw new NatsUnrecoverableException(e.getMessage(), e);
         }

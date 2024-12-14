@@ -1,17 +1,18 @@
 import com.fizzed.blaze.Config;
 import com.fizzed.blaze.Contexts;
+import com.fizzed.jne.HardwareArchitecture;
+import com.fizzed.jne.NativeLanguageModel;
 import com.fizzed.jne.NativeTarget;
+import com.fizzed.jne.OperatingSystem;
 import org.slf4j.Logger;
 
-import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.apache.hc.client5.http.fluent.Request;
 
+import static com.fizzed.blaze.Archives.unarchive;
 import static com.fizzed.blaze.Systems.exec;
 import static com.fizzed.blaze.Systems.rm;
 
@@ -33,29 +34,11 @@ public class blaze {
     public void downloadNatsServer() throws Exception {
         // detect current os & arch, then translate to values that nats-server project uses
         final NativeTarget nativeTarget = NativeTarget.detect();
-        final String natsOs;
-        switch (nativeTarget.getOperatingSystem()) {
-            case MACOS:
-                natsOs = "darwin";
-                break;
-            default:
-                natsOs = nativeTarget.getOperatingSystem().name().toLowerCase();
-                break;
-        }
-
-        final String natsArch;
-        switch (nativeTarget.getHardwareArchitecture()) {
-            case X64:
-                natsArch = "amd64";
-                break;
-            case X32:
-                natsArch = "386";
-                break;
-            default:
-                natsArch = nativeTarget.getHardwareArchitecture().name().toLowerCase();
-                break;
-        }
-
+        final NativeLanguageModel nlm = new NativeLanguageModel()
+            .add("version", this.natsVersion)
+            .add(OperatingSystem.MACOS, "darwin")
+            .add(HardwareArchitecture.X64, "amd64")
+            .add(HardwareArchitecture.X32, "386");
 
         // make a scratch directory
         final Path tempDownloadDir = projectDir.resolve("temp-download-dir");
@@ -64,18 +47,17 @@ public class blaze {
         log.info("Created temp download directory: " + tempDownloadDir);
         try {
             // download the nat-server release we will be testing with
-            final String url = "https://github.com/nats-io/nats-server/releases/download/v"
-                + this.natsVersion + "/nats-server-v" + this.natsVersion + "-" + natsOs + "-" + natsArch + ".zip";
-
+            final String url = nlm.format("https://github.com/nats-io/nats-server/releases/download/v{version}/nats-server-v{version}-{os}-{arch}.zip", nativeTarget);
             final Path downloadFile = tempDownloadDir.resolve("nats-server.zip");
             this.downloadFile(url, downloadFile);
 
-            this.unzip(downloadFile, tempDownloadDir, true);
+            unarchive(downloadFile)
+                .target(tempDownloadDir)
+                .stripLeadingPath()
+                .verbose()
+                .run();
 
-            Path natsExe = tempDownloadDir.resolve("nats-server");
-            if (!Files.exists(natsExe)) {
-                natsExe = tempDownloadDir.resolve("nats-server.exe");
-            }
+            final Path natsExe = tempDownloadDir.resolve(nativeTarget.resolveExecutableFileName("nats-server"));
 
             // target directory is as a resource
             Files.createDirectories(resourcesDir);
@@ -110,7 +92,7 @@ public class blaze {
             .saveContent(file.toFile());
     }
 
-    private void unzip(Path zipFile, Path destDir, boolean stripLeadingDir) throws IOException {
+    /*private void unzip(Path zipFile, Path destDir, boolean stripLeadingDir) throws IOException {
         if (!Files.exists(destDir)) {
             Files.createDirectories(destDir);
         }
@@ -147,6 +129,6 @@ public class blaze {
                 fos.write(buffer, 0, len);
             }
         }
-    }
+    }*/
 
 }

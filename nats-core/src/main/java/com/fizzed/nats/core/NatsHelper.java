@@ -1,9 +1,14 @@
 package com.fizzed.nats.core;
 
+import io.nats.client.Connection;
+import io.nats.client.JetStreamApiException;
+import io.nats.client.JetStreamManagement;
 import io.nats.client.Message;
+import io.nats.client.api.*;
 import io.nats.client.impl.Headers;
 import io.nats.client.impl.NatsJetStreamMetaData;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,6 +80,25 @@ public class NatsHelper {
         }
 
         return sb.toString();
+    }
+
+    static public void deleteAllStreams(Connection connection) throws IOException, JetStreamApiException {
+        JetStreamManagement jsm = connection.jetStreamManagement();
+        final List<String> streamNames = jsm.getStreamNames();
+        for (String streamName : streamNames) {
+            jsm.deleteStream(streamName);
+        }
+    }
+
+    static public StreamInfo createWorkQueueStream(Connection connection, String streamName, String subjects) throws IOException, JetStreamApiException {
+        JetStreamManagement jsm = connection.jetStreamManagement();
+        return jsm.addStream(StreamConfiguration.builder()
+            .name(streamName)
+            .storageType(StorageType.File)
+            .subjects(subjects)
+            .retentionPolicy(RetentionPolicy.WorkQueue)
+            .discardPolicy(DiscardPolicy.Old)
+            .build());
     }
 
 }
