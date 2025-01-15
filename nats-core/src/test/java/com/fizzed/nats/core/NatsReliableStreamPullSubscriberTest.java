@@ -198,6 +198,9 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
 
                 // start the nats server back up
                 try (NatsServerRunner nats2 = this.buildNatsServerRunner()) {
+                    // helps make test more reliable on windows
+                    Thread.sleep(1000L);
+                    
                     // the subscriber should start now
                     subscriber.start();
                 }
