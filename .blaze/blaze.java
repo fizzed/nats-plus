@@ -81,6 +81,11 @@ public class blaze {
         }
     }
 
+    public void release() throws Exception {
+        exec("mvn", "clean", "-DskipTests", "-Darguments=-DskipTests", "release:prepare", "release:perform")
+            .run();
+    }
+
     public void ninjaDemo() throws Exception {
         exec("mvn", "-Pninja-run", "process-classes")
             .run();
