@@ -81,6 +81,11 @@ public class blaze {
         }
     }
 
+    public void ninjaDemo() throws Exception {
+        exec("mvn", "-Pninja-run", "process-classes")
+            .run();
+    }
+
     private final List<Target> crossTestTargets = asList(
         new Target("linux", "x64").setTags("test").setHost("bmh-build-x64-linux-latest"),
         new Target("linux", "arm64").setTags("test").setHost("bmh-build-arm64-linux-latest"),

@@ -1,63 +1,55 @@
-Nats Plus by Fizzed
-===================
+# Nats Plus by Fizzed
 
-Testing this library with other nats.java versions:
+[![Maven Central](https://img.shields.io/maven-central/v/com.fizzed/nats-plus?style=flat-square)](https://mvnrepository.com/artifact/com.fizzed/nats-plus)
 
-    mvn -Dnats.java.version=2.19.1 test
-    mvn -Dnats.java.version=2.20.5-SNAPSHOT test
+## Automated Testing
 
+The following Java versions and platforms are tested using GitHub workflows:
 
+[![Java 8](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java8.yaml?branch=master&label=Java%208&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java8.yaml)
+[![Java 11](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java11.yaml?branch=master&label=Java%2011&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java11.yaml)
+[![Java 17](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java17.yaml?branch=master&label=Java%2017&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java17.yaml)
+[![Java 21](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java21.yaml?branch=master&label=Java%2021&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java21.yaml)
 
+[![Linux x64](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java8.yaml?branch=master&label=Linux%20x64&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java8.yaml)
+[![MacOS arm64](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/macos-arm64.yaml?branch=master&label=MacOS%20arm64&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/macos-arm64.yaml)
+[![Windows x64](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/windows-x64.yaml?branch=master&label=Windows%20x64&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/windows-x64.yaml)
 
+The following platforms are tested using the [Fizzed, Inc.](http://fizzed.com) build system:
 
-
-
-
-
-
-
-
-RabbitMQ Plus by Fizzed
-============================================
-
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fizzed/rabbitmq-plus/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.fizzed/rabbitmq-plus)
-
-[Fizzed, Inc.](http://fizzed.com) (Follow on Twitter: [@fizzed_inc](http://twitter.com/fizzed_inc))
+[![Linux arm64](https://img.shields.io/badge/Linux%20arm64-passing-green)](buildx-results.txt)
+[![Linux MUSL x64](https://img.shields.io/badge/Linux%20MUSL%20x64-passing-green)](buildx-results.txt)
+[![MacOS x64](https://img.shields.io/badge/MacOS%20x64-passing-green)](buildx-results.txt)
+[![Windows arm64](https://img.shields.io/badge/Windows%20arm64-passing-green)](buildx-results.txt)
+[![FreeBSD x64](https://img.shields.io/badge/FreeBSD%20x64-passing-green)](buildx-results.txt)
 
 ## Overview
 
-Utilities and framework integrations for Java and RabbitMQ. Includes an integration
-of [RabbitMQ](https://www.rabbitmq.com/) with the [Ninja Framework](https://github.com/ninjaframework/ninja).
+Utilities and framework integrations for Java and NATS. Includes an integration of [NATS](https://nats.io/) with the [Ninja Framework](https://github.com/ninjaframework/ninja).
 
-## Connection Pool and Other Helpers
-
-### Setup
+## Utilities
 
 ```xml
 <dependency>
     <groupId>com.fizzed</groupId>
-    <artifactId>rabbitmq-util</artifactId>
-    <version>0.0.5</version>
+    <artifactId>nats-core</artifactId>
+    <version>VERSION-HERE</version>
 </dependency>
 ```
 
-Browse the utilities in https://github.com/fizzed/rabbitmq-plus/tree/master/rabbitmq-util/src/main/java/com/fizzed/rabbitmq/util
-
+Browse the utilities in https://github.com/fizzed/nats-plus/tree/master/nats-core/src/main/java/com/fizzed/nats/core
 
 ## Ninja Framework
 
-Ninja Framework module for RabbitMQ. Will help provide connectivity to RabbitMQ,
-a connection pool, and session providers.
+Ninja Framework module for NATS. Will help provide a connection, etc.
 
-### Setup
-
-Add the rabbitmq-ninja-module dependency to your Maven pom.xml
+Add the nats-ninja-module dependency to your Maven pom.xml
 
 ```xml
 <dependency>
     <groupId>com.fizzed</groupId>
-    <artifactId>rabbitmq-ninja-module</artifactId>
-    <version>0.0.5</version>
+    <artifactId>nats-ninja-module</artifactId>
+    <version>VERSION-HERE</version>
 </dependency>
 ```
 
@@ -73,7 +65,7 @@ public class Module extends AbstractModule {
 
     @Override
     protected void configure() {
-        install(new NinjaRabbitModule());
+        install(new NinjaNatsModule());
     }
 
 }
@@ -81,21 +73,25 @@ public class Module extends AbstractModule {
 
 In your `conf/application.conf` file:
 
-```java
+```conf
 #
-# rabbitmq
+# nats
 #
-rabbitmq.verify_queues = test.request
-rabbitmq.url = amqp://localhost:5672
-rabbitmq.user = root
-rabbitmq.password = test
-rabbitmq.pool.min_idle = 0
-#rabbitmq.pool.max_idle = 0
-rabbitmq.pool.evictable_idle_time_millis = 10000
+nats.url = nats://localhost:14222
+nats.username = root
+nats.password = test
+nats.connection_name = nats-demo
 ```
+
+## Testing
+
+Testing this library with other nats.java versions:
+
+    mvn -Dnats.java.version=2.19.1 test
+    mvn -Dnats.java.version=2.20.5-SNAPSHOT test
 
 ## License
 
-Copyright (C) 2020 Fizzed, Inc.
+Copyright (C) 2025 Fizzed, Inc.
 
 This work is licensed under the Apache License, Version 2.0. See LICENSE for details.
