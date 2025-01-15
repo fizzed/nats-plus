@@ -10,7 +10,7 @@ The following Java versions and platforms are tested using GitHub workflows:
 [![Java 17](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java17.yaml?branch=master&label=Java%2017&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java17.yaml)
 [![Java 21](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java21.yaml?branch=master&label=Java%2021&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java21.yaml)
 
-[![Linux x64](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java8.yaml?branch=master&label=Linux%20x64&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java21.yaml)
+[![Linux x64](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java21.yaml?branch=master&label=Linux%20x64&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java21.yaml)
 [![MacOS arm64](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/macos-arm64.yaml?branch=master&label=MacOS%20arm64&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/macos-arm64.yaml)
 [![Windows x64](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/windows-x64.yaml?branch=master&label=Windows%20x64&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/windows-x64.yaml)
 
