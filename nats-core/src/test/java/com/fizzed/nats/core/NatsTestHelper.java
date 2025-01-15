@@ -1,6 +1,7 @@
 package com.fizzed.nats.core;
 
 import com.fizzed.crux.util.Resources;
+import com.fizzed.jne.NativeTarget;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.IOException;
@@ -21,14 +22,14 @@ class NatsTestHelper {
     static public Path getOrFindNatsExe() {
         if (natsExe == null) {
             try {
-                Path markerFile = Resources.file("/locator.txt");
-                Path resourcesDir = markerFile.resolve("../../../../.resources").normalize().toAbsolutePath();
-                Path maybeExe = resourcesDir.resolve("nats-server");
+                final Path markerFile = Resources.file("/locator.txt");
+                final Path resourcesDir = markerFile.resolve("../../../../.resources").normalize().toAbsolutePath();
+                final NativeTarget nativeTarget = NativeTarget.detect();
+                final String exeName = nativeTarget.resolveExecutableFileName("nats-server");
+                final Path maybeExe = resourcesDir.resolve(exeName);
+
                 if (!Files.exists(maybeExe)) {
-                    maybeExe = resourcesDir.resolve("nats-server.exe");
-                }
-                if (!Files.exists(maybeExe)) {
-                    throw new RuntimeException("Unable to locate .resources/nats-server (did you run 'blaze setup' ??)");
+                    throw new RuntimeException("Unable to locate .resources/" + exeName + " (did you run 'blaze setup' ??)");
                 }
 
                 natsExe = maybeExe;

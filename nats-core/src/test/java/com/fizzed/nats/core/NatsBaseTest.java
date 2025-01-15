@@ -2,12 +2,10 @@ package com.fizzed.nats.core;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 
 import io.nats.NatsServerRunner;
 import io.nats.client.*;
-import io.nats.client.api.*;
 
 class NatsBaseTest {
 
@@ -15,6 +13,8 @@ class NatsBaseTest {
         final Path natsExe = NatsTestHelper.getOrFindNatsExe();
 
         final NatsServerRunner.Builder builder = NatsServerRunner.builder()
+            //.debug(true)
+            .fullErrorReportOnStartup(true)
             .port(24222)
             //.debugLevel(DebugLevel.DEBUG_TRACE)
             .jetstream(true)

@@ -102,6 +102,9 @@ public class NatsReliableStreamPublisherTest extends NatsBaseTest {
 
                 // start the server again, publish should work
                 try (NatsServerRunner nats2 = this.buildNatsServerRunner()) {
+                    // make test more reliable on windows
+                    Thread.sleep(1000L);
+
                     final PublishAck ack1 = publisher.publish(NatsMessage.builder()
                         .subject(subjectName)
                         .data("Hello 1")
