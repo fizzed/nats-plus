@@ -6,7 +6,6 @@
 
 The following Java versions and platforms are tested using GitHub workflows:
 
-[![Java 8](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java8.yaml?branch=master&label=Java%208&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java8.yaml)
 [![Java 11](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java11.yaml?branch=master&label=Java%2011&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java11.yaml)
 [![Java 17](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java17.yaml?branch=master&label=Java%2017&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java17.yaml)
 [![Java 21](https://img.shields.io/github/actions/workflow/status/fizzed/nats-plus/java21.yaml?branch=master&label=Java%2021&style=flat-square)](https://github.com/fizzed/nats-plus/actions/workflows/java21.yaml)
@@ -25,7 +24,7 @@ The following platforms are tested using the [Fizzed, Inc.](http://fizzed.com) b
 
 ## Overview
 
-Utilities and framework integrations for Java and NATS. Includes an integration of [NATS](https://nats.io/) with the [Ninja Framework](https://github.com/ninjaframework/ninja).
+Utilities and framework integrations for Java 11+ and NATS.io -- includes an integration of [NATS](https://nats.io/) with the [Ninja Framework](https://github.com/ninjaframework/ninja).
 
 ## Utilities
 
