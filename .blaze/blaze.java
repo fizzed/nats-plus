@@ -5,16 +5,11 @@ import com.fizzed.jne.NativeLanguageModel;
 import com.fizzed.jne.NativeTarget;
 import com.fizzed.jne.OperatingSystem;
 import org.slf4j.Logger;
-
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-
-import org.apache.hc.client5.http.fluent.Request;
 
 import static com.fizzed.blaze.Archives.unarchive;
-import static com.fizzed.blaze.Systems.exec;
-import static com.fizzed.blaze.Systems.rm;
+import static com.fizzed.blaze.Https.*;
+import static com.fizzed.blaze.Systems.*;
 
 public class blaze {
     private final Logger log = Contexts.logger();
@@ -42,14 +37,15 @@ public class blaze {
 
         // make a scratch directory
         final Path tempDownloadDir = projectDir.resolve("temp-download-dir");
-        rm(tempDownloadDir).recursive().force().run();
-        Files.createDirectories(tempDownloadDir);
-        log.info("Created temp download directory: " + tempDownloadDir);
+        rm(tempDownloadDir).recursive().force().verbose().run();
+        mkdir(tempDownloadDir).parents().verbose().run();
+
         try {
             // download the nat-server release we will be testing with
             final String url = nlm.format("https://github.com/nats-io/nats-server/releases/download/v{version}/nats-server-v{version}-{os}-{arch}.zip", nativeTarget);
             final Path downloadFile = tempDownloadDir.resolve("nats-server.zip");
-            this.downloadFile(url, downloadFile);
+
+            httpGet(url).target(downloadFile).run();
 
             unarchive(downloadFile)
                 .target(tempDownloadDir)
@@ -59,22 +55,18 @@ public class blaze {
 
             final Path natsExe = tempDownloadDir.resolve(nativeTarget.resolveExecutableFileName("nats-server"));
 
-            // target directory is as a resource
-            Files.createDirectories(resourcesDir);
-            log.info("Created resource directory: " + resourcesDir);
+            mkdir(resourcesDir).parents().verbose().run();
 
             final Path resourceExe = resourcesDir.resolve(natsExe.getFileName());
 
-            log.info("Copying {} -> {}", natsExe, resourceExe);
             natsExe.toFile().setExecutable(true);
-            Files.copy(natsExe, resourceExe, StandardCopyOption.REPLACE_EXISTING);
+            cp(natsExe).target(resourceExe).force().verbose().run();
 
             // verify the nats-server works
-            log.info("");
             log.info("Verifying nats-server works... will run 'nat-server -v' to test");
-            log.info("");
+            System.out.println();
             exec(resourceExe, "-v").run();
-            log.info("");
+            System.out.println();
             log.info("Success, all done.");
         } finally {
             // always cleanup
@@ -82,53 +74,5 @@ public class blaze {
             log.info("Deleted temp download directory: " + tempDownloadDir);
         }
     }
-
-    // helpers
-
-    private void downloadFile(String url, Path file) throws Exception {
-        log.info("Downloading {} -> {}", url, file);
-        Request.get(url)
-            .execute()
-            .saveContent(file.toFile());
-    }
-
-    /*private void unzip(Path zipFile, Path destDir, boolean stripLeadingDir) throws IOException {
-        if (!Files.exists(destDir)) {
-            Files.createDirectories(destDir);
-        }
-
-        try (InputStream fin = Files.newInputStream(zipFile)) {
-            try (ZipInputStream zipIn = new ZipInputStream(fin)) {
-                ZipEntry entry = zipIn.getNextEntry();
-                while (entry != null) {
-                    String entryName = entry.getName();
-                    if (stripLeadingDir && entryName.contains("/")) {
-                        entryName = entryName.substring(entryName.indexOf('/')+1);
-                    }
-
-                    final Path outputPath = destDir.resolve(entryName);
-
-                    if (!entry.isDirectory()) {
-                        extractFile(zipIn, outputPath);
-                        log.info("Extracted {}", outputPath);
-                    } else {
-                        Files.createDirectories(outputPath);
-                    }
-                    zipIn.closeEntry();
-                    entry = zipIn.getNextEntry();
-                }
-            }
-        }
-    }
-
-    private void extractFile(ZipInputStream zipIn, Path outputPath) throws IOException {
-        try (OutputStream fos = Files.newOutputStream(outputPath)) {
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = zipIn.read(buffer)) > 0) {
-                fos.write(buffer, 0, len);
-            }
-        }
-    }*/
 
 }

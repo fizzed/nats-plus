@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 
+import static com.fizzed.nats.core.NatsHelper.createWorkQueueStream;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,7 +27,7 @@ public class NatsReliableStreamPublisherTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection);
 
@@ -63,7 +64,7 @@ public class NatsReliableStreamPublisherTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection);
 
@@ -82,7 +83,7 @@ public class NatsReliableStreamPublisherTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();
@@ -120,7 +121,7 @@ public class NatsReliableStreamPublisherTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();
@@ -149,7 +150,7 @@ public class NatsReliableStreamPublisherTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();

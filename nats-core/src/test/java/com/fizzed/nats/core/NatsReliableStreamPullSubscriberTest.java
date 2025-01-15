@@ -3,7 +3,6 @@ package com.fizzed.nats.core;
 import com.fizzed.crux.util.WaitFor;
 import io.nats.NatsServerRunner;
 import io.nats.client.Connection;
-import io.nats.client.Message;
 import io.nats.client.api.PublishAck;
 import io.nats.client.impl.NatsMessage;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.fizzed.nats.core.NatsHelper.createWorkQueueStream;
 import static com.fizzed.nats.core.NatsHelper.dumpMessage;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,7 +36,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();
@@ -124,7 +124,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
                     .setSubject(subjectName)
@@ -179,7 +179,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
                     .setSubject(subjectName)
@@ -214,7 +214,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
                     .setSubject(subjectName)
@@ -239,7 +239,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
             try (Connection connection = this.connectNats(nats, true)) {
                 final String subjectName = this.randomSubjectName();
 
-                this.createWorkQueueStream(connection, this.randomStreamName(), subjectName);
+                createWorkQueueStream(connection, this.randomStreamName(), subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();
@@ -280,7 +280,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();
@@ -329,7 +329,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();
@@ -389,7 +389,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPublisher publisher = new NatsReliableStreamPublisher(connection)
                     .start();
@@ -493,7 +493,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
         try (NatsServerRunner nats = this.buildNatsServerRunner()) {
             try (Connection connection = this.connectNats(nats, true)) {
                 // create stream for work queue
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 final NatsReliableStreamPullSubscriber subscriber = new NatsReliableStreamPullSubscriber(connection)
                     .setSubject(subjectName)
@@ -550,7 +550,7 @@ class NatsReliableStreamPullSubscriberTest extends NatsBaseTest {
                 }
 
                 // create queues again
-                this.createWorkQueueStream(connection, streamName, subjectName);
+                createWorkQueueStream(connection, streamName, subjectName);
 
                 // start should now work
                 subscriber.start();
