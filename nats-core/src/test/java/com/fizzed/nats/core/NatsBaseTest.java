@@ -19,6 +19,8 @@ class NatsBaseTest {
             //.debugLevel(DebugLevel.DEBUG_TRACE)
             .jetstream(true)
             .executablePath(natsExe)
+            .processCheckTries(10)
+            .processCheckWait(500L)
 //            .configFilePath("/mypath/custom.conf")
 //            .configInserts(customInserts)
             ;
