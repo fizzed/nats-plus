@@ -34,6 +34,7 @@
         <module>nats-core</module>
         <module>nats-ninja-module</module>
         <module>nats-ninja-demo</module>
+        <module>nats-bom</module>
     </modules>
 
     <dependencyManagement>
