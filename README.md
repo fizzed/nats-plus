@@ -32,7 +32,7 @@ Utilities and framework integrations for Java 11+ and NATS.io -- includes an int
 <dependency>
     <groupId>com.fizzed</groupId>
     <artifactId>nats-core</artifactId>
-    <version>VERSION-HERE</version>
+    <version>0.0.3</version>
 </dependency>
 ```
 
@@ -48,7 +48,7 @@ Add the nats-ninja-module dependency to your Maven pom.xml
 <dependency>
     <groupId>com.fizzed</groupId>
     <artifactId>nats-ninja-module</artifactId>
-    <version>VERSION-HERE</version>
+    <version>0.0.3</version>
 </dependency>
 ```
 
