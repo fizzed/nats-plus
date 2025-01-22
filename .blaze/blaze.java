@@ -1,25 +1,22 @@
-import com.fizzed.blaze.Config;
-import com.fizzed.blaze.Contexts;
 import com.fizzed.blaze.Task;
+import com.fizzed.blaze.project.PublicBlaze;
 import com.fizzed.buildx.Buildx;
 import com.fizzed.buildx.Target;
 import com.fizzed.jne.HardwareArchitecture;
 import com.fizzed.jne.NativeLanguageModel;
 import com.fizzed.jne.NativeTarget;
 import com.fizzed.jne.OperatingSystem;
-import org.slf4j.Logger;
+
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.fizzed.blaze.Archives.unarchive;
 import static com.fizzed.blaze.Https.*;
 import static com.fizzed.blaze.Systems.*;
 import static java.util.Arrays.asList;
 
-public class blaze {
-    private final Logger log = Contexts.logger();
-    private final Config config = Contexts.config();
-    private final Path projectDir = Contexts.withBaseDir("..").toAbsolutePath().normalize();
+public class blaze extends PublicBlaze {
     private final Path resourcesDir = projectDir.resolve(".resources");
     private final String natsVersion = config.value("nats.version").orElse("2.10.22");
 
@@ -81,32 +78,27 @@ public class blaze {
         }
     }
 
-    public void release() throws Exception {
-        exec("mvn", "clean", "-DskipTests", "-Darguments=-DskipTests", "release:prepare", "release:perform")
-            .run();
-    }
-
     public void ninjaDemo() throws Exception {
         exec("mvn", "-Pninja-run", "process-classes")
             .run();
     }
 
-    private final List<Target> crossTestTargets = asList(
-        new Target("linux", "x64").setTags("test").setHost("bmh-build-x64-linux-latest"),
-        new Target("linux", "arm64").setTags("test").setHost("bmh-build-arm64-linux-latest"),
-        //new Target("linux", "riscv64").setTags("test").setHost("bmh-build-riscv64-linux-latest"),
-        //new Target("linux", "armhf").setTags("test").setHost("bmh-build-armhf-linux-latest"),
-        new Target("linux_musl", "x64").setTags("test").setHost("bmh-build-x64-linux-musl-latest"),
-        new Target("macos", "x64").setTags("test").setHost("bmh-build-x64-macos-latest"),
-        new Target("macos", "arm64").setTags("test").setHost("bmh-build-arm64-macos-latest"),
-        new Target("windows", "x64").setTags("test").setHost("bmh-build-x64-windows-latest"),
-        new Target("windows", "arm64").setTags("test").setHost("bmh-build-arm64-windows-latest"),
-        new Target("freebsd", "x64").setTags("test").setHost("bmh-build-x64-freebsd-latest")
-        //new Target("openbsd", "x64").setTags("test").setHost("bmh-build-x64-openbsd-latest")
-    );
+    public void release() throws Exception {
+        this.mvnCommandsWithJdk(this.minimumSupportedJavaVersion(),
+            "clean", "-DskipTests", "-Darguments=-DskipTests", "release:prepare", "release:perform");
+    }
 
-    @Task(order = 53)
-    public void cross_tests() throws Exception {
+    @Override
+    protected List<Target> crossTestTargets() {
+        return super.crossTestTargets().stream()
+            .filter(v -> !(v.getOs().contains("linux") && v.getArch().contains("riscv64")))
+            .filter(v -> !(v.getOs().contains("linux") && v.getArch().contains("armhf")))
+            .filter(v -> !(v.getOs().contains("openbsd")))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    protected void mvnCrossTests(List<Target> crossTestTargets) throws Exception {
         new Buildx(crossTestTargets)
             .tags("test")
             .execute((target, project) -> {
