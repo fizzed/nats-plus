@@ -89,6 +89,11 @@ public class blaze extends PublicBlaze {
     }
 
     @Override
+    protected int[] supportedJavaVersions() {
+        return new int[] {21, 17, 11};
+    }
+
+    @Override
     protected List<Target> crossTestTargets() {
         return super.crossTestTargets().stream()
             .filter(v -> !(v.getOs().contains("linux") && v.getArch().contains("riscv64")))
