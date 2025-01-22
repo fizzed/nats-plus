@@ -27,7 +27,7 @@
         <stork.version>2.7.0</stork.version>
         <jackson.version>2.9.1</jackson.version>
         <slf4j.version>2.0.13</slf4j.version>
-        <nats.java.version>2.20.4</nats.java.version>
+        <nats.java.version>2.20.5</nats.java.version>
     </properties>
 
     <modules>
