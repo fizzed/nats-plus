@@ -48,7 +48,11 @@ public class blaze extends PublicBlaze {
             final String url = nlm.format("https://github.com/nats-io/nats-server/releases/download/v{version}/nats-server-v{version}-{os}-{arch}.zip", nativeTarget);
             final Path downloadFile = tempDownloadDir.resolve("nats-server.zip");
 
-            httpGet(url).target(downloadFile).run();
+            httpGet(url)
+                .verbose()
+                .progress()
+                .target(downloadFile, true)
+                .run();
 
             unarchive(downloadFile)
                 .target(tempDownloadDir)
