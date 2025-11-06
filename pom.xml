@@ -9,7 +9,7 @@
     <parent>
         <groupId>com.fizzed</groupId>
         <artifactId>maven-parent</artifactId>
-        <version>3.3.0</version>
+        <version>3.3.2-SNAPSHOT</version>
     </parent>
 
     <scm>
@@ -36,21 +36,6 @@
         <module>nats-ninja-demo</module>
         <module>nats-bom</module>
     </modules>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.9.0</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <autoPublish>false</autoPublish>
-                    <skipPublishing>false</skipPublishing>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
     <dependencyManagement>
         
