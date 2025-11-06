@@ -46,7 +46,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <autoPublish>false</autoPublish>
-                    <skipPublishing>true</skipPublishing>
+                    <skipPublishing>false</skipPublishing>
                 </configuration>
             </plugin>
         </plugins>
