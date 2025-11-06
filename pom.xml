@@ -45,6 +45,7 @@
                 <version>0.9.0</version>
                 <extensions>true</extensions>
                 <configuration>
+                    <autoPublish>false</autoPublish>
                     <skipPublishing>true</skipPublishing>
                 </configuration>
             </plugin>
