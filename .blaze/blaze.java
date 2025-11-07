@@ -93,20 +93,16 @@ public class blaze extends PublicBlaze {
 
     @Task(group="project")
     public void demo_ninja() throws Exception {
-        // (re)compiles code and we get the classpath in one step
         final MavenClasspath classpath = mavenClasspath(this.mavenProject, "runtime", "compile", "nats-ninja-demo")
-            .verbose()
             .run();
 
         exec("java", "-cp", classpath, "ninja.standalone.NinjaJetty")
-            .verbose()
             .run();
     }
 
     @Override
     protected void projectRelease() throws Exception {
-        this.mvnCommandsWithJdk(this.minimumSupportedJavaVersion(),
-            "clean", "-DskipTests", "-Darguments=-DskipTests", "release:prepare", "release:perform");
+        this.mvnReleaseWithNoTests();
     }
 
     @Override
