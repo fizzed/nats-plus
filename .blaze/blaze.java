@@ -20,15 +20,19 @@ public class blaze extends PublicBlaze {
     private final Path resourcesDir = projectDir.resolve(".resources");
     private final String natsVersion = config.value("nats.version").orElse("2.10.22");
 
-    public void setup() throws Exception {
+    @Override
+    protected void projectSetup() throws Exception {
+        super.projectSetup();
         this.downloadNatsServer();
     }
 
-    public void nuke() {
+    @Override
+    public void projectNuke() throws Exception {
+        super.projectNuke();
         rm(resourcesDir).recursive().force().verbose().run();
     }
 
-    public void downloadNatsServer() throws Exception {
+    protected void downloadNatsServer() throws Exception {
         // detect current os & arch, then translate to values that nats-server project uses
         final NativeTarget nativeTarget = NativeTarget.detect();
         final NativeLanguageModel nlm = new NativeLanguageModel()
