@@ -1,4 +1,6 @@
-import com.fizzed.blaze.Task;
+import com.fizzed.blaze.maven.MavenClasspath;
+import com.fizzed.blaze.maven.MavenProject;
+import com.fizzed.blaze.maven.MavenProjects;
 import com.fizzed.blaze.project.PublicBlaze;
 import com.fizzed.buildx.Buildx;
 import com.fizzed.buildx.Target;
@@ -14,7 +16,7 @@ import java.util.stream.Collectors;
 import static com.fizzed.blaze.Archives.unarchive;
 import static com.fizzed.blaze.Https.*;
 import static com.fizzed.blaze.Systems.*;
-import static java.util.Arrays.asList;
+import static com.fizzed.blaze.maven.MavenProjects.*;
 
 public class blaze extends PublicBlaze {
     private final Path resourcesDir = projectDir.resolve(".resources");
@@ -82,8 +84,16 @@ public class blaze extends PublicBlaze {
         }
     }
 
-    public void ninjaDemo() throws Exception {
-        exec("mvn", "-Pninja-run", "process-classes")
+    final MavenProject mavenProject = MavenProjects.mavenProject().run();
+
+    public void demo_ninja() throws Exception {
+        // (re)compiles code and we get the classpath in one step
+        final MavenClasspath classpath = mavenClasspath(this.mavenProject, "runtime", "compile", "nats-ninja-demo")
+            .verbose()
+            .run();
+
+        exec("java", "-cp", classpath, "ninja.standalone.NinjaJetty")
+            .verbose()
             .run();
     }
 
@@ -98,22 +108,23 @@ public class blaze extends PublicBlaze {
     }
 
     @Override
-    protected List<Target> crossTestTargets() {
-        return super.crossTestTargets().stream()
-            .filter(v -> !(v.getOs().contains("linux") && v.getArch().contains("riscv64")))
-            .filter(v -> !(v.getOs().contains("linux") && v.getArch().contains("armhf")))
-            .filter(v -> !(v.getOs().contains("openbsd")))
+    protected List<Target> crossHostTestTargets() {
+        return super.crossHostTestTargets().stream()
+            .filter(v -> !(v.getName().startsWith("freebsd") && v.getName().contains("arm64")))
+            .filter(v -> !(v.getName().startsWith("openbsd")))
             .collect(Collectors.toList());
     }
 
     @Override
-    protected void mvnCrossTests(List<Target> crossTestTargets) throws Exception {
+    protected void mvnCrossHostTests(List<Target> crossTestTargets) throws Exception {
+        final boolean serial = this.config.flag("serial").orElse(false);
         new Buildx(crossTestTargets)
-            .tags("test")
+            .parallel(!serial)
             .execute((target, project) -> {
-                project.action("java", "-jar", "blaze.jar", "setup")
+                // we need the nats-server first
+                project.exec("java", "-jar", "blaze.jar", "setup")
                     .run();
-                project.action("mvn", "clean", "test")
+                project.exec("mvn", "clean", "test")
                     .run();
             });
     }
