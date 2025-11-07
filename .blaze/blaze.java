@@ -1,3 +1,4 @@
+import com.fizzed.blaze.Task;
 import com.fizzed.blaze.maven.MavenClasspath;
 import com.fizzed.blaze.maven.MavenProject;
 import com.fizzed.blaze.maven.MavenProjects;
@@ -29,7 +30,7 @@ public class blaze extends PublicBlaze {
     }
 
     @Override
-    public void projectNuke() throws Exception {
+    protected void projectNuke() throws Exception {
         super.projectNuke();
         rm(resourcesDir).recursive().force().verbose().run();
     }
@@ -90,6 +91,7 @@ public class blaze extends PublicBlaze {
 
     final MavenProject mavenProject = MavenProjects.mavenProject().run();
 
+    @Task(group="project")
     public void demo_ninja() throws Exception {
         // (re)compiles code and we get the classpath in one step
         final MavenClasspath classpath = mavenClasspath(this.mavenProject, "runtime", "compile", "nats-ninja-demo")
@@ -101,7 +103,8 @@ public class blaze extends PublicBlaze {
             .run();
     }
 
-    public void release() throws Exception {
+    @Override
+    protected void projectRelease() throws Exception {
         this.mvnCommandsWithJdk(this.minimumSupportedJavaVersion(),
             "clean", "-DskipTests", "-Darguments=-DskipTests", "release:prepare", "release:perform");
     }
